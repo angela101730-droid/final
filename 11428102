@@ -1,0 +1,107 @@
+#include <iostream>
+#include <cstdlib>
+#include <ctime>
+#include "rlutil.h"
+
+using namespace std;
+
+// 感測器結構
+struct Sensor {
+    string name;
+    int value;
+    int minSafe;
+    int maxSafe;
+};
+
+// 依數值顯示顏色
+void setStatusColor(int v, int minS, int maxS) {
+    if (v < minS || v > maxS)
+        rlutil::setColor(rlutil::RED);
+    else if (v == minS || v == maxS)
+        rlutil::setColor(rlutil::YELLOW);
+    else
+        rlutil::setColor(rlutil::GREEN);
+}
+
+// 畫長條圖
+void drawBar(int x, int y, int value) {
+    rlutil::locate(x, y);
+    for (int i = 0; i < value / 2; i++) {
+        cout << "#";
+    }
+}
+
+int main() {
+    srand(time(NULL));
+
+    Sensor sensors[3] = {
+        {"Temperature (C)", 25, 18, 35},
+        {"Humidity (%)", 50, 30, 70},
+        {"Voltage (V)", 5, 4, 6}
+    };
+
+    bool pause = false;
+
+    rlutil::saveDefaultColor();
+    rlutil::hidecursor();
+
+    while (true) {
+        rlutil::cls();
+
+        // 標題
+        rlutil::setColor(rlutil::CYAN);
+        rlutil::locate(1, 1);
+        cout << "=== Terminal Sensor Monitoring Dashboard ===";
+
+        // 感測器顯示
+        for (int i = 0; i < 3; i++) {
+            if (!pause) {
+                sensors[i].value += (rand() % 3 - 1); // 緩慢變化
+            }
+
+            rlutil::locate(2, 3 + i * 3);
+            cout << sensors[i].name << ": ";
+
+            setStatusColor(sensors[i].value,
+                           sensors[i].minSafe,
+                           sensors[i].maxSafe);
+
+            cout << sensors[i].value;
+            rlutil::resetColor();
+
+            drawBar(30, 3 + i * 3, sensors[i].value);
+        }
+
+        // 操作說明
+        rlutil::setColor(rlutil::YELLOW);
+        rlutil::locate(1, 15);
+        cout << "P: Pause/Resume   R: Reset   ESC: Exit";
+        rlutil::resetColor();
+
+        rlutil::msleep(300);
+
+        // 鍵盤輸入
+        if (rlutil::kbhit()) {
+            int key = rlutil::getkey();
+
+            if (key == 'p' || key == 'P') {
+                pause = !pause;
+            }
+            else if (key == 'r' || key == 'R') {
+                sensors[0].value = 25;
+                sensors[1].value = 50;
+                sensors[2].value = 5;
+            }
+            else if (key == rlutil::KEY_ESCAPE) {
+                break;
+            }
+        }
+    }
+
+    rlutil::showcursor();
+    rlutil::resetColor();
+    rlutil::cls();
+
+    cout << "Program Ended." << endl;
+    return 0;
+}
